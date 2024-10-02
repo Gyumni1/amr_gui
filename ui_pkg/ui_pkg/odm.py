@@ -64,13 +64,8 @@ amcl1 = PoseWithCovarianceStamped()
 # path_before_1 = AstarMsg()
 
 global start_point_1
-robot_positions= [-1.75, -0.6]
-    # 'robot1': [-1.75, -0.6],  # 로봇 1의 초기 위치(x, y)
-    # 'robot2': [-2.85, -1.6],  # 로봇 2의 초기 위치(x, y)
-    # 'robot3': [-2.95, -1.6],  # 로봇 3의 초기 위치(x, y)
-    # 'robot4': [-3.05, -1.6]   # 로봇 4의 초기 위치(x, y)
-# }
-
+# robot_positions= [-1.75, -0.6]
+robot_positions= [50, 50]
 
 class AmclSubscriber(Node):
 
@@ -274,6 +269,8 @@ class WindowClass(QDialog, from_class):
         self.map_origin = map_yaml_data['origin'][:2]
         # print(f"Map resolution, map_origin : {self.map_resolution} x {self.map_origin} ")
 
+        self.previous_positions = [] 
+
     def updateMap(self):
         # self.map.setPixmap(self.pixmap.scaled(self.width * self.image_scale, self.height * self.image_scale, Qt.KeepAspectRatio))
         # painter = QPainter(self.map.pixmap())
@@ -293,23 +290,40 @@ class WindowClass(QDialog, from_class):
         grid_x, grid_y = self.calc_grid_position(position[0], position[1])
         grid_x = int(grid_x)
         grid_y = int(grid_y)
-
         grid_y = self.map_label.height() - grid_y
         # grid_y = 400 - int(grid_x) 
         # grid_x = 100 - int(grid_y) 
             # if target_robot_name == 'robot1':
-        pen = QPen(Qt.blue, 10)
+        
         #QPen(Qt.red, 20, Qt.SolidLine)
 
             # elif target_robot_name == 'robot2':
             #     pen = QPen(Qt.green, 10)
-        print(f"Drawpoint position: ({grid_x-140}, {grid_y+380})")
+        # print(f"Drawpoint position: ({grid_x-140}, {grid_y+380})")
+        
 
+        #지나간 점 지우기
+        if self.previous_positions:
+            for prev_x, prev_y in self.previous_positions:
+                # 배경색으로 이전 점 지우기
+                painter.setPen(QPen(Qt.white, 10))  # 배경색으로 설정
+                painter.drawPoint(prev_x, prev_y)
 
+        pen = QPen(Qt.blue, 10)
         painter.setPen(pen)
-        painter.drawPoint(grid_x -140, grid_y + 380)
-        painter.drawText(grid_x -150, grid_y + 380, "1")
-            #target_robot_name[-1]
+
+        current_point_x = grid_x - 140
+        current_point_y = grid_y + 380
+
+        painter.drawPoint(current_point_x, current_point_y)
+        # painter.drawText(current_point_x - 10, current_point_y + 15, "1")
+
+
+        # painter.drawPoint(grid_x -140, grid_y + 380)
+        # painter.drawText(grid_x -150, grid_y + 380, "1")
+
+            # 현재 점을 리스트에 추가
+        self.previous_positions.append((current_point_x, current_point_y))
 
 
 
