@@ -224,14 +224,14 @@ class WindowClass(QDialog, from_class):
         # self.map_origin = map_yaml_data['origin'][:2]
 
     def load_map_image(self):
-        # map QLabel 객체 가져오기
+        # map QLabel 객체 가져오기     find map_label
         self.map_label = self.findChild(QLabel, 'map')
 
         if self.map_label is None:
             print("Failed to find QLabel named 'map'")
             return
 
-        # 이미지 불러오기
+        # 이미지 불러오기     
         self.pixmap = QPixmap(image_path)
 
         if self.pixmap.isNull():
@@ -248,8 +248,9 @@ class WindowClass(QDialog, from_class):
         self.image_scale = 2
 
         # 이미지 변환 (-90도 회전)
-        transform = QTransform().rotate(-90)
-        rotated_pixmap = self.pixmap.transformed(transform)
+        # transform = QTransform().rotate(-90)
+        # rotated_pixmap = self.pixmap.transformed(transform)
+        rotated_pixmap = self.pixmap
 
         # 이미지 이동 설정 (왼쪽으로 20픽셀 이동, 위로 20픽셀 이동)
         translated_pixmap = QPixmap(rotated_pixmap.size())
@@ -271,6 +272,7 @@ class WindowClass(QDialog, from_class):
         # map resolution 및 origin 설정
         self.map_resolution = map_yaml_data['resolution']
         self.map_origin = map_yaml_data['origin'][:2]
+        # print(f"Map resolution, map_origin : {self.map_resolution} x {self.map_origin} ")
 
     def updateMap(self):
         # self.map.setPixmap(self.pixmap.scaled(self.width * self.image_scale, self.height * self.image_scale, Qt.KeepAspectRatio))
@@ -296,17 +298,17 @@ class WindowClass(QDialog, from_class):
         # grid_y = 400 - int(grid_x) 
         # grid_x = 100 - int(grid_y) 
             # if target_robot_name == 'robot1':
-        pen = QPen(Qt.red, 10)
+        pen = QPen(Qt.blue, 10)
         #QPen(Qt.red, 20, Qt.SolidLine)
 
             # elif target_robot_name == 'robot2':
             #     pen = QPen(Qt.green, 10)
-        print(f"Drawpoint position: ({grid_x+400}, {grid_y+200})")
+        print(f"Drawpoint position: ({grid_x-140}, {grid_y+380})")
 
 
         painter.setPen(pen)
-        painter.drawPoint(grid_x +10, grid_y + 30)
-        painter.drawText(grid_x -210, self.height * self.image_scale - grid_y, "1")
+        painter.drawPoint(grid_x -140, grid_y + 380)
+        painter.drawText(grid_x -150, grid_y + 380, "1")
             #target_robot_name[-1]
 
 
@@ -371,8 +373,8 @@ class WindowClass(QDialog, from_class):
         # painter.end()
 
     def calc_grid_position(self, x, y):
-        pos_x = ( self.map_origin[0]-x) / self.map_resolution #* self.image_scale
-        pos_y = (self.map_origin[1]-y) / self.map_resolution #* self.image_scale
+        pos_x = (x - self.map_origin[0]) / self.map_resolution * 2
+        pos_y = (y - self.map_origin[1]) / self.map_resolution * 2
         return pos_x, pos_y
 
 
@@ -412,8 +414,8 @@ def main():
     except Exception as e:
         print(f"Error creating WindowClass: {e}")
     
-    cam_subscriber = CamSubscriber(myWindows)
-    executor.add_node(cam_subscriber)
+    # cam_subscriber = CamSubscriber(myWindows)
+    # executor.add_node(cam_subscriber)
 
     amcl_subscriber = AmclSubscriber()
     executor.add_node(amcl_subscriber)
