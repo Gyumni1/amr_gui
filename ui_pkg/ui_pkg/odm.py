@@ -11,9 +11,10 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy, QoSProfile, qos_profile_sensor_data
 
 #from interfaces_pkg.msg import *
-from std_msgs.msg import String
+from std_msgs.msg import String ,Int32
 from sensor_msgs.msg import CompressedImage, Image
-from geometry_msgs.msg import PoseWithCovarianceStamped 
+from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
+from nav2_msgs.msg import Costmap
 
 from cv_bridge import CvBridge
 
@@ -30,8 +31,6 @@ import time
 
 # 현재 파일의 디렉토리 경로를 가져옵니다.
 # current_dir = os.path.dirname(os.path.abspath(__file__))
-
-# ui_file = os.path.join(get_package_share_directory('ui_pkg'), 'ui', 'monitor.ui')
 ui_file = os.path.join(get_package_share_directory('ui_pkg'), 'ui', 'odm.ui')
 # map_yaml_file = os.path.join(get_package_share_directory('main_pkg'), 'map', 'home.yaml')# 
 yaml_file = os.path.join(get_package_share_directory('turtlebot3_navigation2'), 'map', 'map.yaml')
@@ -47,14 +46,11 @@ with open(yaml_file, 'r') as file:
     image_file = map_yaml_data['image']
 
 current_dir = os.path.dirname(yaml_file)
-
 image_path = os.path.join(current_dir, image_file)
-
 if not os.path.exists(image_path):
     print(f"Image file does not exist: {image_path}")
 else:
     print(f"Image file loaded from: {image_path}")
-
 
 global amcl1
 amcl1 = PoseWithCovarianceStamped()
@@ -64,7 +60,6 @@ amcl1 = PoseWithCovarianceStamped()
 # path_before_1 = AstarMsg()
 
 global start_point_1
-# robot_positions= [-1.75, -0.6]
 robot_positions= [50, 50]
 
 class AmclSubscriber(Node):
@@ -90,6 +85,21 @@ class AmclSubscriber(Node):
         robot_positions[1] = amcl.pose.pose.position.y
 
 
+class NavigationNode(Node):
+    def __init__(self):
+        super().__init__('custom_navigation_node')
+        self.publisher = self.create_publisher(PoseStamped, '/goal_pose', 10)
+
+    def send_goal(self, x, y):
+        goal_msg = PoseStamped()
+        goal_msg.header.frame_id = "map"  # 목표 위치의 프레임
+        goal_msg.header.stamp = self.get_clock().now().to_msg()
+        goal_msg.pose.position.x = x
+        goal_msg.pose.position.y = y
+        goal_msg.pose.position.z = 0.0
+        goal_msg.pose.orientation.w = 1.0  # 방향 (여기서는 기본 방향)
+        self.publisher.publish(goal_msg)
+        self.get_logger().info(f'Published goal: ({x}, {y})')
 
 class PathSubscriber(Node):
     
@@ -108,11 +118,29 @@ class PathSubscriber(Node):
         global path_1, amcl1, start_point_1
         path_1 = path
         start_point_1 = amcl1
-        
-        
 
+class Trailer_Destination(Node):
+    
+    def __init__(self):
+        super().__init__('Trailer_Destination')
+        self.pub_trailer = self.create_publisher(Int32, '/set_id', 10)
+        self.pub_destination = self.create_publisher(Int32, '/set_destination_id', 10)
+    
         
+    def trailer1_callback(self):
+        self.trailer_id = 1
+        self.id_msg = Int32()
+        self.id_msg.data = int(self.trailer_id)
+        self.pub_trailer.publish(self.id_msg)
 
+    def trailer2_callback(self):
+        self.trailer_id = 2
+        self.id_msg = Int32()
+        self.id_msg.data = int(self.trailer_id)
+        self.pub_trailer.publish(self.id_msg)
+
+ 
+        
 class CamSubscriber(Node):
     def __init__(self, ui):
         super().__init__('cam_subscriber')
@@ -158,18 +186,28 @@ class CamSubscriber(Node):
         self.pixmap = self.pixmap.scaled(self.ui.cam_label.width(), self.ui.cam_label.width())  # 크기 조정
         self.ui.cam_label.setPixmap(self.pixmap)  # GUI 업데이트
 
-        
-# class WindowClass(QMainWindow, from_class):
-# class WindowClass(QDialog, from_class):
+class CostmapNode(Node):
+    def __init__(self):
+        super().__init__('costmap_node')
+        self.costmap_subscriber = self.create_subscription(Costmap, '/global_costmap/costmap', self.costmap_callback, 10)
+        self.costmap_data = None
+
+    def costmap_callback(self, msg):
+        # Costmap 데이터를 받아서 저장
+        self.costmap_data = msg.data  # msg.data는 1D 배열 형태
+
 class WindowClass(QDialog, from_class):        
 
     def __init__(self):
         super().__init__()
-
         try:
             self.setupUi(self)
         except Exception as e:
             print(f"Error during setupUi: {e}")
+
+        self.navigation_node = NavigationNode() 
+        self.trailer_destination_node = Trailer_Destination()
+        self.costmap_node = CostmapNode()
 
 
         # self.setupUi(self)
@@ -179,27 +217,23 @@ class WindowClass(QDialog, from_class):
 
         self.map_timer = QTimer(self)
         self.map_timer.timeout.connect(self.updateMap)
+        self.map_timer.timeout.connect(self.update_costmap)
         self.map_timer.start(200)
 
-        # timer = QTimer(self)
-        # timer.timeout.connect(self.time)
-        # timer.timeout.connect(self.updateMap)
-        # timer.start(200)
+        self.goal_button.clicked.connect(self.on_goal_button_click)
+
+        self.Trailer1.clicked.connect(self.Trailer1_button_click)
+        self.Trailer2.clicked.connect(self.Trailer2_button_click)
+
+        self.destination1.clicked.connect(self.Destination1_button_click)
+        self.destination2.clicked.connect(self.Destination2_button_click)
+        
 
         # self.time = 0        
         # self.follow_label.setText('Wait 🔴')
         # self.follow_node = rp.create_node('following_mode')
         # self.follow_publisher = self.follow_node.create_publisher(String, '/follow', 10)
 
-
-        # # 사람 선택
-        # self.isCaptureOn = False
-        # self.capture_btn.setText('Capture Person')
-        # self.capture_label.hide()
-        # self.capture_btn.clicked.connect(self.clickCapture)
-
-        # self.capture_node = rp.create_node('capture_mode')
-        # self.capture_publisher = self.capture_node.create_publisher(String, '/capturing', 10)
 #-------------------------------
         # with open(map_yaml_file) as f:
         #     map_yaml_data = yaml.full_load(f)
@@ -217,6 +251,77 @@ class WindowClass(QDialog, from_class):
 
         # self.map_resolution = map_yaml_data['resolution']
         # self.map_origin = map_yaml_data['origin'][:2]
+
+    def on_goal_button_click(self):
+        # 목표 위치 지정 (예: (1.0, 1.0))
+        x = -1.15  # 원하는 x 좌표
+        y = -0.49  # 원하는 y 좌표
+        self.navigation_node.send_goal(x, y)
+
+    def Trailer1_button_click(self):
+        self.trailer_text.setText('Trailer1')
+        # self.trailer_text.show()
+        self.trailer_destination_node.trailer1_callback()
+        
+        
+
+    def Trailer2_button_click(self):
+        self.trailer_text.setText('Trailer2')
+        self.trailer_destination_node.trailer2_callback()
+        # self.trailer_text.show()
+
+
+    def Destination1_button_click(self):
+        self.destination_text.setText('Next door')
+        # self.destination_text.show()
+
+
+    def Destination2_button_click(self):
+        self.destination_text.setText('Next floor')
+        # self.destination_text.show()
+
+
+    def update_costmap(self):
+        if self.costmap_node.costmap_data is not None:
+            width = 384  # 실제 costmap의 가로 크기로 설정 (변경 필요)
+            height = 384  # 실제 costmap의 세로 크기로 설정 (변경 필요)
+
+            costmap_array = self.costmap_node.costmap_data
+            image = QImage(width, height, QImage.Format_Grayscale8)
+
+            for y in range(height):
+                for x in range(width):
+                    index = y * width + x
+                    value = costmap_array[index] if index < len(costmap_array) else 0
+                    # -1을 255로 변환하여 그레이스케일에서 보이지 않도록 처리
+                    pixel_value = 255 if value == -1 else value
+                    image.setPixel(x, y, qRgb(pixel_value, pixel_value, pixel_value))  # 그레이스케일로 설정
+
+            # 해상도와 원점 적용
+            scale_factor = 1 / self.map_resolution  # 해상도에 따른 스케일링 팩터
+            scaled_width = int(width * scale_factor)
+            scaled_height = int(height * scale_factor)
+
+            # 코스트 맵을 스케일 조정
+            scaled_image = image.scaled(scaled_width, scaled_height, Qt.KeepAspectRatio)
+
+            # 원점에 따라 이미지를 이동
+            move_x = int(-self.map_origin[0] * scale_factor)  # X축 이동
+            move_y = int(-self.map_origin[1] * scale_factor)  # Y축 이동
+
+            # 이동된 이미지를 표시하기 위한 새로운 QPixmap 생성
+            translated_pixmap = QPixmap(scaled_image.size())
+            painter = QPainter(translated_pixmap)
+
+            # pixmap = QPixmap.fromImage(image)
+
+            if not painter.isActive():
+                print("Painter is not active")
+                return
+
+            painter.drawPixmap(move_x, move_y, scaled_image)  # X, Y 좌표에 따라 이동
+            painter.end()
+            self.costmap_label.setPixmap(translated_pixmap)  # QLabel에 코스트 맵 이미지 설정
 
     def load_map_image(self):
         # map QLabel 객체 가져오기     find map_label
@@ -291,14 +396,8 @@ class WindowClass(QDialog, from_class):
         grid_x = int(grid_x)
         grid_y = int(grid_y)
         grid_y = self.map_label.height() - grid_y
-        # grid_y = 400 - int(grid_x) 
-        # grid_x = 100 - int(grid_y) 
-            # if target_robot_name == 'robot1':
         
         #QPen(Qt.red, 20, Qt.SolidLine)
-
-            # elif target_robot_name == 'robot2':
-            #     pen = QPen(Qt.green, 10)
         # print(f"Drawpoint position: ({grid_x-140}, {grid_y+380})")
         
 
@@ -445,6 +544,9 @@ def main():
 
     thread = Thread(target=executor.spin)
     thread.start()
+
+    executor.add_node(myWindows.navigation_node)
+    executor.add_node(myWindows.costmap_node)
     
     sys.exit(app.exec_())
 

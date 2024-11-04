@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1020</width>
-    <height>631</height>
+    <height>856</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,21 +34,125 @@
     <rect>
      <x>20</x>
      <y>440</y>
-     <width>281</width>
-     <height>171</height>
+     <width>381</width>
+     <height>341</height>
     </rect>
    </property>
    <property name="title">
-    <string>GroupBox</string>
+    <string>Select Trailer and Destination</string>
    </property>
    <widget class="QTableWidget" name="tableWidget">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>30</y>
+      <x>10</x>
+      <y>230</y>
       <width>131</width>
       <height>101</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="Trailer1">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>40</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Trailer1</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="trailer_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>101</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Select Trailer :</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="Trailer2">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>40</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Trailer2</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="Destination_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>87</y>
+      <width>101</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Destination :</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="destination1">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>90</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>next door</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="destination2">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>90</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>next floor</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="trailer_text">
+    <property name="geometry">
+     <rect>
+      <x>107</x>
+      <y>40</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>None</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="destination_text">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>87</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>None</string>
     </property>
    </widget>
   </widget>
@@ -124,6 +228,45 @@ border: 1px solid black;</string>
     </property>
     <property name="clearButtonEnabled">
      <bool>false</bool>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QPushButton" name="goal_button">
+   <property name="geometry">
+    <rect>
+     <x>910</x>
+     <y>270</y>
+     <width>101</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Set Goal</string>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="costmap_groupbox">
+   <property name="geometry">
+    <rect>
+     <x>460</x>
+     <y>470</y>
+     <width>441</width>
+     <height>301</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>costmap</string>
+   </property>
+   <widget class="QLabel" name="costmap_label">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>30</y>
+      <width>281</width>
+      <height>251</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
     </property>
    </widget>
   </widget>
