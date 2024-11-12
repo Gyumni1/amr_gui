@@ -88,7 +88,8 @@ class AmclSubscriber(Node):
 class NavigationNode(Node):
     def __init__(self):
         super().__init__('custom_navigation_node')
-        self.publisher = self.create_publisher(PoseStamped, '/goal_pose', 10)
+        # self.publisher = self.create_publisher(PoseStamped, '/goal_pose', 10)
+        self.start = self.create_publisher(Int32, 'path_start', 10)
 
     def send_goal(self, x, y):
         goal_msg = PoseStamped()
@@ -101,19 +102,23 @@ class NavigationNode(Node):
         self.publisher.publish(goal_msg)
         self.get_logger().info(f'Published goal: ({x}, {y})')
 
+    def start_call(self):
+        self.ready = 1
+        self.msg = Int32()
+        self.msg.data = int(self.ready)
+        self.start.publish(self.msg)
+        self.get_logger().info(f'Published start')
+
 class PathSubscriber(Node):
     
     def __init__(self):
         super().__init__('path_subscriber')
-        
         # self.sub1 = self.create_subscription(
         #     AstarMsg,      #####
         #     '/astar_paths',
         #     self.path_callback,
         #     10
         # )
-    
-        
     def path_callback(self, path):
         global path_1, amcl1, start_point_1
         path_1 = path
@@ -139,6 +144,12 @@ class Trailer_Destination(Node):
         self.id_msg.data = int(self.trailer_id)
         self.pub_trailer.publish(self.id_msg)
 
+    def desti_callback(self):
+        self.desti_number = 2
+        self.msg = Int32()
+        self.msg.data = int(self.desti_number)
+        self.pub_destination.publish(self.msg)
+
  
         
 class CamSubscriber(Node):
@@ -160,23 +171,6 @@ class CamSubscriber(Node):
         
         self.bridge = CvBridge()
     
-    # def listener_callback(self, data):
-    #     # 수신한 압축된 이미지를 NumPy 배열로 변환
-    #     np_arr = np.frombuffer(data.data, np.uint8)
-        
-
-        # image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # 이미지 디코딩
-        # if image_np is None or image_np.size == 0:
-        #     print("Error: Received empty image")
-        #     return
-        # print(f"Received image with shape: {image_np.shape}")
-        # image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)  # 색상 변환
-        # height, width, channel = image_np.shape
-        # bytes_per_line = 3 * width
-        # q_image = QImage(image_np.data, width, height, bytes_per_line, QImage.Format_RGB888)  # QImage 생성
-        # self.pixmap = QPixmap.fromImage(q_image)  # QPixmap 생성
-        # self.pixmap = self.pixmap.scaled(self.ui.cam_label.width(), self.ui.cam_label.width())  # 크기 조정
-        # self.ui.cam_label.setPixmap(self.pixmap)  # GUI 업데이트
     def listener_callback(self, data):
         width = data.width
         height = data.height
@@ -207,6 +201,7 @@ class WindowClass(QDialog, from_class):
 
         self.navigation_node = NavigationNode() 
         self.trailer_destination_node = Trailer_Destination()
+        
         self.costmap_node = CostmapNode()
 
 
@@ -221,16 +216,19 @@ class WindowClass(QDialog, from_class):
         self.map_timer.start(200)
 
         self.goal_button.clicked.connect(self.on_goal_button_click)
+        self.stop_button.clicked.connect(self.stop_button_click)
 
         self.Trailer1.clicked.connect(self.Trailer1_button_click)
         self.Trailer2.clicked.connect(self.Trailer2_button_click)
 
         self.destination1.clicked.connect(self.Destination1_button_click)
         self.destination2.clicked.connect(self.Destination2_button_click)
+
+        self.status_label.setText('Ready ⚫')
         
 
         # self.time = 0        
-        # self.follow_label.setText('Wait 🔴')
+        
         # self.follow_node = rp.create_node('following_mode')
         # self.follow_publisher = self.follow_node.create_publisher(String, '/follow', 10)
 
@@ -253,21 +251,23 @@ class WindowClass(QDialog, from_class):
         # self.map_origin = map_yaml_data['origin'][:2]
 
     def on_goal_button_click(self):
-        # 목표 위치 지정 (예: (1.0, 1.0))
-        x = -1.15  # 원하는 x 좌표
-        y = -0.49  # 원하는 y 좌표
-        self.navigation_node.send_goal(x, y)
+        self.navigation_node.start_call()
+        self.status_label.setText('Working 🟢')
+        print('Working 🟢🔴🟠🟡🟢🔵🟣🟤⚫⚪')
+
+    def stop_button_click(self):
+        self.status_label.setText('Emergency 🔴')
 
     def Trailer1_button_click(self):
         self.trailer_text.setText('Trailer1')
         # self.trailer_text.show()
         self.trailer_destination_node.trailer1_callback()
+        print(self.trailer_destination_node.id_msg.data)
         
-        
-
     def Trailer2_button_click(self):
         self.trailer_text.setText('Trailer2')
         self.trailer_destination_node.trailer2_callback()
+        print(self.trailer_destination_node.id_msg.data)
         # self.trailer_text.show()
 
 
@@ -278,6 +278,7 @@ class WindowClass(QDialog, from_class):
 
     def Destination2_button_click(self):
         self.destination_text.setText('Next floor')
+        self.trailer_destination_node.desti_callback()
         # self.destination_text.show()
 
 
