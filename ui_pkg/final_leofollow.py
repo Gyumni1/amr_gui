@@ -14,6 +14,11 @@ clubroom_front = [15.928,0.032135]
 credit_point = [28.539,6.5206] #7.2155 엘베봤을때z = 0.0148, w = 0.9998
 #강의실방향 봤을때 z = -0.7296 w = 0.684
 
+
+trailer_goal_state = [11.831, -0.14858]
+
+charge_pose = [4.45531, -0.3803]
+
 # Shelf positions for picking / pickingup file
 shelf_positions = {
     'shelf_A': [-3.829, -7.604],
@@ -95,7 +100,7 @@ def main():
         rclpy.spin_once(start_navigation)
         start_call = start_navigation.start_received 
 
-        if start_call.data == 1: break
+        if start_call.data == True: break
         else:
             print("Navigation don't received start call")      
     ##aadding 

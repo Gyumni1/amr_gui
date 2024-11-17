@@ -37,7 +37,7 @@ from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 
 ###tractor_trailer using msg type
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32, Bool
 
 
 class TaskResult(Enum):
@@ -83,12 +83,12 @@ class StartNode(Node):
     def __init__(self):
         super().__init__('start')
         self.subscription = self.create_subscription(
-            Int32,
+            Bool,
             'path_start',
             self.listener_callback,
             10)
         
-        self.start_received = Int32()
+        self.start_received = Bool()
 
     def listener_callback(self, msg):
         self.get_logger().info('Received response: "%s"' % msg.data)
