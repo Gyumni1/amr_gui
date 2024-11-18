@@ -117,19 +117,60 @@ def main():
     goal_pose.pose.orientation.z = -0.6958
     goal_pose.pose.orientation.w = 0.7198
 
+    max_retries = 3  # 최대 재시도 횟수
+    retries = 0
+    result = None
+
     path1 = navigator.getPath(initial_pose, goal_pose, planner_id="GridBased")
 
-    # navigator.goToPose(goal_pose)
-    navigator.followPath(path1)
-    result = None
-    while not navigator.isTaskComplete():
-        feedback = navigator.getFeedback()
-        if feedback:
-            print(f"Remaining distance: {feedback}")
+    while retries < max_retries:
+        
+        if path1 is not None:
+            logger.info("Path planning succeeded.")
+                # 첫 번째 시도에서는 followPath 사용
+            if retries == 0:
+                navigator.followPath(path1)
+            else:
+                # 재시도 시 goToPose 사용
+                navigator.goToPose(goal_pose)
+
+            #navigation complete and waiting
+            while not navigator.isTaskComplete():
+                feedback = navigator.getFeedback()
+                if feedback:
+                    print(f"Remaining distance: {feedback}")
+
+            result = navigator.getResult()
+            time.sleep(2)
+
+            if result == TaskResult.SUCCEEDED:
+                print("goal_pose succeeded")
+                break  # 내비게이션 성공
+            else:
+                navigator.backup(backup_dist=0.5, backup_speed=0.1)
+                logger.warning("Navigation failed. Retrying...")
+                retries += 1
+                time.sleep(1)  # 재시도 간 대기 시간
+
+        else:
+            logger.warning(f"Path planning failed, attempt {retries + 1}. Retrying...")
+            retries += 1
+            time.sleep(1)  # 재시도 간 대기 시간 
+
+#change recovery sequence
+    # path1 = navigator.getPath(initial_pose, goal_pose, planner_id="GridBased")
+
+    # # navigator.goToPose(goal_pose)
+    # navigator.followPath(path1)
     
-    result = navigator.getResult()
-    time.sleep(2)    
+    # while not navigator.isTaskComplete():
+    #     feedback = navigator.getFeedback()
+    #     if feedback:
+    #         print(f"Remaining distance: {feedback}")
     
+    # result = navigator.getResult()
+    # time.sleep(2)    
+    #################################
 
     while rclpy.ok():
         rclpy.spin_once(talk_with_arduino)
